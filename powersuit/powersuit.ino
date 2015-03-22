@@ -2,6 +2,7 @@
 
 #define PIN 1
 #define LOWER_SWITCH 6
+#define UPPER_SWITCH 9
 #define HOLD_THRESHOLD 20
 #define BRIGHT_STEP 5
 #define COLOR_CYCLE_STEP 4
@@ -19,8 +20,10 @@ Adafruit_NeoPixel pixels = Adafruit_NeoPixel(5, PIN, NEO_GRB + NEO_KHZ800);
 
 uint8_t mode = 0; //current mode
 uint8_t color = 85; //current color (start red)
+uint32_t setColor;
 uint8_t offset = 0; //for chase animation
-uint8_t buttonState = 0; //current button's state
+uint8_t upperState = 0; //current button's state
+uint8_t lowerState = 0; //current button's state
 uint8_t lastButtonState = HIGH; //temp last state of button
 uint8_t i; //loop counter
 bool lightsOn = true; //for flash animation
@@ -33,16 +36,34 @@ uint8_t brightSign = BRIGHT_STEP;
 
 void setup() {
   pinMode(LOWER_SWITCH, INPUT_PULLUP); // switch wired to ground & pin, pushing makes it go LOW
+  pinMode(UPPER_SWITCH, INPUT_PULLUP); // switch wired to ground & pin, pushing makes it go LOW
   pixels.begin();
   pixels.show(); // Initialize all pixels to 'off'
 }
 
 void loop() {
-  buttonState = digitalRead(LOWER_SWITCH);
+  lowerState = digitalRead(LOWER_SWITCH);
+  upperState = digitalRead(UPPER_SWITCH);
+  setColor = pixels.Color(255,255,255);
+  if(lowerState == LOW && upperState == LOW) {
+    Serial.println("both");
+    setColor = pixels.Color(0,0,255);  
+  }
+  else {
+    if(lowerState == LOW) {
+    Serial.println("lower");
+      setColor = pixels.Color(0,255,0);
+    }
+    if(upperState == LOW) {
+          Serial.println("upper");
+      setColor = pixels.Color(255,0,0);
+    }
+  }
   
-  if(buttonState == LOW) { //pin grounded, pulse
+  if(lowerState == LOW || upperState == LOW) { //pin grounded, pulse
         for(i=0; i < pixels.numPixels(); ++i) {
-          pixels.setPixelColor(i, Wheel(color&255));
+          //pixels.setPixelColor(i, Wheel(color&255));
+          pixels.setPixelColor(i, setColor);
         }
         if(brightness <= 0) {
           brightness = 0;
@@ -61,7 +82,7 @@ void loop() {
       brightness = 255;
       pixels.setBrightness(brightness);
       for(i=0; i < pixels.numPixels(); ++i) {
-        pixels.setPixelColor(i, pixels.Color(255,255,255));
+        pixels.setPixelColor(i, setColor);
       }
       pixels.show();
       delay(50);    
